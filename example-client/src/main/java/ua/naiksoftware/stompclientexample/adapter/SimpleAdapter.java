@@ -1,4 +1,4 @@
-package ua.naiksoftware.stompclientexample;
+package ua.naiksoftware.stompclientexample.adapter;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,6 +8,10 @@ import android.widget.TextView;
 import java.util.List;
 
 import androidx.recyclerview.widget.RecyclerView;
+
+import org.jetbrains.annotations.NotNull;
+
+import ua.naiksoftware.stompclientexample.R;
 
 /**
  * Created by Naik on 24.02.17.
@@ -20,6 +24,7 @@ public class SimpleAdapter extends RecyclerView.Adapter<SimpleAdapter.SimpleView
         mDataSet = dataSet;
     }
 
+    @NotNull
     @Override
     public SimpleViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         return new SimpleViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.item_layout, parent, false));
@@ -44,9 +49,9 @@ public class SimpleAdapter extends RecyclerView.Adapter<SimpleAdapter.SimpleView
 
         final TextView mTextView;
 
-        public SimpleViewHolder(View itemView) {
+        SimpleViewHolder(View itemView) {
             super(itemView);
-            mTextView = (TextView) itemView.findViewById(R.id.text);
+            mTextView = itemView.findViewById(R.id.text);
         }
     }
 }

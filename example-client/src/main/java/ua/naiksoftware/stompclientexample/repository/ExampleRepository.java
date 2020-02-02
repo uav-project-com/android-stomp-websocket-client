@@ -1,4 +1,4 @@
-package ua.naiksoftware.stompclientexample;
+package ua.naiksoftware.stompclientexample.repository;
 
 import io.reactivex.Completable;
 import io.reactivex.Flowable;

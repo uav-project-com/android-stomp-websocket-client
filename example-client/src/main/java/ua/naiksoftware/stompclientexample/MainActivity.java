@@ -25,8 +25,11 @@ import io.reactivex.schedulers.Schedulers;
 import ua.naiksoftware.stomp.Stomp;
 import ua.naiksoftware.stomp.dto.StompHeader;
 import ua.naiksoftware.stomp.StompClient;
+import ua.naiksoftware.stompclientexample.adapter.SimpleAdapter;
+import ua.naiksoftware.stompclientexample.model.EchoModel;
+import ua.naiksoftware.stompclientexample.network.RestClient;
 
-import static ua.naiksoftware.stompclientexample.RestClient.ANDROID_EMULATOR_LOCALHOST;
+import static ua.naiksoftware.stompclientexample.network.RestClient.ANDROID_EMULATOR_LOCALHOST;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -107,9 +110,7 @@ public class MainActivity extends AppCompatActivity {
                 .subscribe(topicMessage -> {
                     Log.d(TAG, "Received " + topicMessage.getPayload());
                     addItem(mGson.fromJson(topicMessage.getPayload(), EchoModel.class));
-                }, throwable -> {
-                    Log.e(TAG, "Error on subscribe topic", throwable);
-                });
+                }, throwable -> Log.e(TAG, "Error on subscribe topic", throwable));
 
         compositeDisposable.add(dispTopic);
 
@@ -117,12 +118,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void sendEchoViaStomp(View v) {
-//        if (!mStompClient.isConnected()) return;
         compositeDisposable.add(mStompClient.send("/topic/hello-msg-mapping", "Echo STOMP " + mTimeFormat.format(new Date()))
                 .compose(applySchedulers())
-                .subscribe(() -> {
-                    Log.d(TAG, "STOMP echo send successfully");
-                }, throwable -> {
+                .subscribe(() -> Log.d(TAG, "STOMP echo send successfully"), throwable -> {
                     Log.e(TAG, "Error send STOMP echo", throwable);
                     toast(throwable.getMessage());
                 }));
@@ -132,9 +130,7 @@ public class MainActivity extends AppCompatActivity {
         mRestPingDisposable = RestClient.getInstance().getExampleRepository()
                 .sendRestEcho("Echo REST " + mTimeFormat.format(new Date()))
                 .compose(applySchedulers())
-                .subscribe(() -> {
-                    Log.d(TAG, "REST echo send successfully");
-                }, throwable -> {
+                .subscribe(() -> Log.d(TAG, "REST echo send successfully"), throwable -> {
                     Log.e(TAG, "Error send REST echo", throwable);
                     toast(throwable.getMessage());
                 });

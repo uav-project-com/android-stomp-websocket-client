@@ -1,8 +1,9 @@
-package ua.naiksoftware.stompclientexample;
+package ua.naiksoftware.stompclientexample.network;
 
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
+import ua.naiksoftware.stompclientexample.repository.ExampleRepository;
 
 /**
  * Created by Naik on 24.02.17.
