@@ -26,12 +26,19 @@ import ua.naiksoftware.stomp.Stomp;
 import ua.naiksoftware.stomp.dto.StompHeader;
 import ua.naiksoftware.stomp.StompClient;
 import ua.naiksoftware.stompclientexample.adapter.SimpleAdapter;
+import ua.naiksoftware.stompclientexample.callback.RestfulCallback;
 import ua.naiksoftware.stompclientexample.model.EchoModel;
+import ua.naiksoftware.stompclientexample.model.UserModel;
+import ua.naiksoftware.stompclientexample.network.ApiClient;
+import ua.naiksoftware.stompclientexample.network.Constant;
 import ua.naiksoftware.stompclientexample.network.RestClient;
+import ua.naiksoftware.stompclientexample.resource.AuthenticationController;
+import ua.naiksoftware.stompclientexample.resource.implement.AuthenticationControllerIpml;
 
-import static ua.naiksoftware.stompclientexample.network.RestClient.ANDROID_EMULATOR_LOCALHOST;
+import static ua.naiksoftware.stompclientexample.network.Constant.BASE_PORT;
+import static ua.naiksoftware.stompclientexample.network.Constant.BASE_URL_SERVER;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements RestfulCallback {
 
     private static final String TAG = "MainActivity";
 
@@ -45,18 +52,31 @@ public class MainActivity extends AppCompatActivity {
 
     private CompositeDisposable compositeDisposable;
 
+    private String token;
+    private AuthenticationControllerIpml authenticationController;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        AuthenticationController service = ApiClient.getClient().create(AuthenticationController.class);
+        authenticationController = new AuthenticationControllerIpml(service);
+        authenticationController.setCallback(this);
+        authenticationController.login(UserModel.builder()
+                .username("admin")
+                .password("admin")
+                .build());
+        Toast.makeText(this, "Authen..", Toast.LENGTH_SHORT).show();
+
         mRecyclerView = findViewById(R.id.recycler_view);
         mAdapter = new SimpleAdapter(mDataSet);
         mAdapter.setHasStableIds(true);
         mRecyclerView.setAdapter(mAdapter);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, true));
 
-        mStompClient = Stomp.over(Stomp.ConnectionProvider.OKHTTP, "ws://" + ANDROID_EMULATOR_LOCALHOST
-                + ":" + RestClient.SERVER_PORT + "/example-endpoint/websocket");
+        mStompClient = Stomp.over(
+                Stomp.ConnectionProvider.OKHTTP,
+                "ws://" + BASE_URL_SERVER +":" + BASE_PORT + "/example-endpoint/websocket");
 
         resetSubscriptions();
     }
@@ -65,15 +85,11 @@ public class MainActivity extends AppCompatActivity {
         mStompClient.disconnect();
     }
 
-    public static final String LOGIN = "login";
-
-    public static final String PASSCODE = "passcode";
-
     public void connectStomp(View view) {
 
         List<StompHeader> headers = new ArrayList<>();
-        headers.add(new StompHeader(LOGIN, "guest"));
-        headers.add(new StompHeader(PASSCODE, "guest"));
+        // add token that was authenticated
+        headers.add(new StompHeader(Constant.AUTH, this.token));
 
         mStompClient.withClientHeartbeat(1000).withServerHeartbeat(1000);
 
@@ -128,7 +144,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void sendEchoViaRest(View v) {
         mRestPingDisposable = RestClient.getInstance().getExampleRepository()
-                .sendRestEcho("Echo REST " + mTimeFormat.format(new Date()))
+                .sendRestEcho(token, "Echo REST " + mTimeFormat.format(new Date()))
                 .compose(applySchedulers())
                 .subscribe(() -> Log.d(TAG, "REST echo send successfully"), throwable -> {
                     Log.e(TAG, "Error send REST echo", throwable);
@@ -168,5 +184,11 @@ public class MainActivity extends AppCompatActivity {
         if (mRestPingDisposable != null) mRestPingDisposable.dispose();
         if (compositeDisposable != null) compositeDisposable.dispose();
         super.onDestroy();
+    }
+
+    @Override
+    public void passCallbackData(Object data) {
+        this.token = (String) data;
+        Log.e("Token", "Token: " + token);
     }
 }

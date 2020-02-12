@@ -10,9 +10,6 @@ import ua.naiksoftware.stompclientexample.repository.ExampleRepository;
  */
 public class RestClient {
 
-    public static final String ANDROID_EMULATOR_LOCALHOST = "192.168.1.21";
-    public static final String SERVER_PORT = "8080";
-
     private static RestClient instance;
     private static final Object lock = new Object();
 
@@ -32,7 +29,9 @@ public class RestClient {
     private final ExampleRepository mExampleRepository;
 
     private RestClient() {
-        Retrofit retrofit = new Retrofit.Builder().baseUrl("http://" + ANDROID_EMULATOR_LOCALHOST + ":" + SERVER_PORT + "/")
+        Retrofit retrofit =
+                new Retrofit.Builder().baseUrl(
+                        "http://" + Constant.BASE_URL_SERVER + ":" + Constant.BASE_PORT + "/")
                 .addConverterFactory(GsonConverterFactory.create())
                 .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                 .build();
