@@ -172,7 +172,7 @@ public class StompClient {
                 StompCommand.SEND,
                 Arrays.asList(new StompHeader(STOMP_MESSAGE_HEADER, data),
                         new StompHeader(StompHeader.DESTINATION, destination)),
-                data));
+                null));
     }
 
     public Completable send(@NonNull StompMessage stompMessage) {
