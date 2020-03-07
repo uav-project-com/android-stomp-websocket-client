@@ -120,11 +120,11 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
         compositeDisposable.add(dispLifecycle);
 
         // Receive greetings
-        Disposable dispTopic = mStompClient.topic("/topic/greetings")
+        Disposable dispTopic = mStompClient.topic("/topic/greetings") // subscribe
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(topicMessage -> {
-                    Log.d(TAG, "Received " + topicMessage.getPayload());
+                    Log.e(TAG, "Received " + topicMessage.getPayload());
                     addItem(mGson.fromJson(topicMessage.getPayload(), EchoModel.class));
                 }, throwable -> Log.e(TAG, "Error on subscribe topic", throwable));
 
@@ -134,19 +134,21 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
     }
 
     public void sendEchoViaStomp(View v) {
-        compositeDisposable.add(mStompClient.send("/topic/hello-msg-mapping", "Echo STOMP " + mTimeFormat.format(new Date()))
+        compositeDisposable.add(mStompClient.send("/app/hello-msg-mapping", "Echo STOMP " + mTimeFormat.format(new Date()))
                 .compose(applySchedulers())
-                .subscribe(() -> Log.d(TAG, "STOMP echo send successfully"), throwable -> {
+                .subscribe(() -> Log.e(TAG, "STOMP echo send successfully"), throwable -> {
                     Log.e(TAG, "Error send STOMP echo", throwable);
                     toast(throwable.getMessage());
-                }));
+                })
+
+        );
     }
 
     public void sendEchoViaRest(View v) {
         mRestPingDisposable = RestClient.getInstance().getExampleRepository()
-                .sendRestEcho(token, "Echo REST " + mTimeFormat.format(new Date()))
+                .sendRestEcho(Constant.TOKEN_HEADER + token, "Echo REST " + mTimeFormat.format(new Date()))
                 .compose(applySchedulers())
-                .subscribe(() -> Log.d(TAG, "REST echo send successfully"), throwable -> {
+                .subscribe(() -> Log.e(TAG, "REST echo send successfully"), throwable -> {
                     Log.e(TAG, "Error send REST echo", throwable);
                     toast(throwable.getMessage());
                 });

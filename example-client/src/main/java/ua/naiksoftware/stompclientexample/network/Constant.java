@@ -8,4 +8,5 @@ public class Constant {
     public static final String AUTH = "authorization";
     public static final String BASE_URL_SERVER = "192.168.1.9";
     public static final String BASE_PORT = "8080";
+    public static final String TOKEN_HEADER = "Bearer ";
 }

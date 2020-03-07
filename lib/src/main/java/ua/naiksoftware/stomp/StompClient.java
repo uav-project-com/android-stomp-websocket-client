@@ -6,6 +6,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +26,8 @@ import ua.naiksoftware.stomp.pathmatcher.SimplePathMatcher;
 import ua.naiksoftware.stomp.provider.ConnectionProvider;
 import ua.naiksoftware.stomp.dto.LifecycleEvent;
 import ua.naiksoftware.stomp.dto.StompHeader;
+
+import static ua.naiksoftware.stomp.dto.StompHeader.STOMP_MESSAGE_HEADER;
 
 /**
  * Created by naik on 05.05.16.
@@ -167,7 +170,8 @@ public class StompClient {
     public Completable send(String destination, String data) {
         return send(new StompMessage(
                 StompCommand.SEND,
-                Collections.singletonList(new StompHeader(StompHeader.DESTINATION, destination)),
+                Arrays.asList(new StompHeader(STOMP_MESSAGE_HEADER, data),
+                        new StompHeader(StompHeader.DESTINATION, destination)),
                 data));
     }
 
