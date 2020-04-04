@@ -19,15 +19,13 @@ import io.reactivex.Flowable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;
+import ua.naiksoftware.stomp.dto.LifecycleEvent;
 import ua.naiksoftware.stomp.dto.StompCommand;
+import ua.naiksoftware.stomp.dto.StompHeader;
 import ua.naiksoftware.stomp.dto.StompMessage;
 import ua.naiksoftware.stomp.pathmatcher.PathMatcher;
 import ua.naiksoftware.stomp.pathmatcher.SimplePathMatcher;
 import ua.naiksoftware.stomp.provider.ConnectionProvider;
-import ua.naiksoftware.stomp.dto.LifecycleEvent;
-import ua.naiksoftware.stomp.dto.StompHeader;
-
-import static ua.naiksoftware.stomp.dto.StompHeader.STOMP_MESSAGE_HEADER;
 
 /**
  * Created by naik on 05.05.16.
@@ -170,9 +168,11 @@ public class StompClient {
     public Completable send(String destination, String data) {
         return send(new StompMessage(
                 StompCommand.SEND,
-                Arrays.asList(new StompHeader(STOMP_MESSAGE_HEADER, data),
-                        new StompHeader(StompHeader.DESTINATION, destination)),
-                null));
+                Arrays.asList(
+                        new StompHeader(StompHeader.DESTINATION, destination),
+                        new StompHeader(StompHeader.CONTENT_LENGTH, String.valueOf(data.getBytes().length))
+                ),
+                data));
     }
 
     public Completable send(@NonNull StompMessage stompMessage) {
