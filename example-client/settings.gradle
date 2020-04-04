@@ -1,1 +1,1 @@
-include 'example-client', ':library'
+include 'example-client'

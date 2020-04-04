@@ -6,3 +6,7 @@
 /build
 /captures
 test-server/build
+
+example-client/local.properties
+
+lib/local.properties
