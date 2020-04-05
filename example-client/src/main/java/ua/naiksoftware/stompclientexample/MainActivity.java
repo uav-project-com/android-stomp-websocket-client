@@ -3,6 +3,7 @@ package ua.naiksoftware.stompclientexample;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -28,10 +29,10 @@ import ua.naiksoftware.stomp.StompClient;
 import ua.naiksoftware.stompclientexample.adapter.SimpleAdapter;
 import ua.naiksoftware.stompclientexample.callback.RestfulCallback;
 import ua.naiksoftware.stompclientexample.model.Command;
-import ua.naiksoftware.stompclientexample.model.EchoModel;
 import ua.naiksoftware.stompclientexample.model.UserModel;
 import ua.naiksoftware.stompclientexample.network.ApiClient;
 import ua.naiksoftware.stompclientexample.network.Constant;
+import ua.naiksoftware.stompclientexample.network.RestClient;
 import ua.naiksoftware.stompclientexample.resource.AuthenticationController;
 import ua.naiksoftware.stompclientexample.resource.implement.AuthenticationControllerIpml;
 
@@ -55,13 +56,15 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
     private String token;
     private AuthenticationControllerIpml authenticationController;
 
-    private final String fromUser = "client";
-    private final String toUser = "admin";
+    private final String fromUser = "admin";
+    private final String toUser = "client";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Button chat = findViewById(R.id.chattingBtn);
+        chat.setText(chat.getText() + " " + toUser);
         AuthenticationController service = ApiClient.getClient().create(AuthenticationController.class);
         authenticationController = new AuthenticationControllerIpml(service);
         authenticationController.setCallback(this);
@@ -129,10 +132,10 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(topicMessage -> {
                     Log.e(TAG, "Received " + topicMessage.getPayload());
-                    addItem(mGson.fromJson(topicMessage.getPayload(), EchoModel.class));
+                    addItem(mGson.fromJson(topicMessage.getPayload(), Command.class));
                 }, throwable -> Log.e(TAG, "Error on subscribe topic", throwable));
 
-        // subscribe my username topic for received message from other user
+        // subscribe my username topic for received message from other user: sendCommandToUser()
         String subscribePath = "/chat/queue/" + fromUser + "/chat/queue/messages";
         Log.e("Subscribe", subscribePath);
         Disposable usersTopic = mStompClient.topic(subscribePath) // subscribe
@@ -140,7 +143,7 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(topicMessage -> {
                     Log.e(TAG, "Received from USER: " + topicMessage.getPayload());
-                    addItem(mGson.fromJson(topicMessage.getPayload(), EchoModel.class));
+                    addItem(mGson.fromJson(topicMessage.getPayload(), Command.class));
                 }, throwable -> Log.e(TAG, "Error on subscribe topic", throwable));
 
         compositeDisposable.add(dispTopic);
@@ -150,7 +153,8 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
     }
 
     public void sendEchoViaStomp(View v) {
-        compositeDisposable.add(mStompClient.send("/app/hello-msg-mapping", "AABBCC")
+        Command sendMsg = Command.builder().fromUser(fromUser).data("sendEchoViaStomp").build();
+        compositeDisposable.add(mStompClient.send("/app/hello-msg-mapping", new Gson().toJson(sendMsg))
                 .compose(applySchedulers())
                 .subscribe(() -> Log.e(TAG, "STOMP echo send successfully"), throwable -> {
                     Log.e(TAG, "Error send STOMP echo", throwable);
@@ -161,8 +165,8 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
     }
 
     /**
-     *
-     * @param v
+     *  Send to special user, test by swap fromUser - toUser user with two devices
+     * @param v view
      */
     public void sendCommandToUser(View v) {
         Command command = Command.builder()
@@ -183,18 +187,17 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
     }
 
     public void sendEchoViaRest(View v) {
-        /*mRestPingDisposable = RestClient.getInstance().getExampleRepository()
+        mRestPingDisposable = RestClient.getInstance().getExampleRepository()
                 .sendRestEcho(Constant.TOKEN_HEADER + token, "Echo REST " + mTimeFormat.format(new Date()))
                 .compose(applySchedulers())
                 .subscribe(() -> Log.e(TAG, "REST echo send successfully"), throwable -> {
                     Log.e(TAG, "Error send REST echo", throwable);
                     toast(throwable.getMessage());
-                });*/
-        sendCommandToUser(v);
+                });
     }
 
-    private void addItem(EchoModel echoModel) {
-        mDataSet.add(echoModel.getEcho() + " - " + mTimeFormat.format(new Date()));
+    private void addItem(Command msg) {
+        mDataSet.add("[" + msg.getFromUser() + "] " + msg.getData() + " - " + mTimeFormat.format(new Date()));
         mAdapter.notifyDataSetChanged();
         mRecyclerView.smoothScrollToPosition(mDataSet.size() - 1);
     }

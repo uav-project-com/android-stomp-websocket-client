@@ -61,6 +61,13 @@
             android:onClick="sendEchoViaRest"/>
 
     </LinearLayout>
+    <Button
+        android:id="@+id/chattingBtn"
+        style="?android:buttonBarButtonStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/send_mode_3"
+        android:onClick="sendCommandToUser"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view"
