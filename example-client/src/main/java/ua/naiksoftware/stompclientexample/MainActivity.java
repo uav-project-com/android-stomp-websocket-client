@@ -27,11 +27,11 @@ import ua.naiksoftware.stomp.dto.StompHeader;
 import ua.naiksoftware.stomp.StompClient;
 import ua.naiksoftware.stompclientexample.adapter.SimpleAdapter;
 import ua.naiksoftware.stompclientexample.callback.RestfulCallback;
+import ua.naiksoftware.stompclientexample.model.Command;
 import ua.naiksoftware.stompclientexample.model.EchoModel;
 import ua.naiksoftware.stompclientexample.model.UserModel;
 import ua.naiksoftware.stompclientexample.network.ApiClient;
 import ua.naiksoftware.stompclientexample.network.Constant;
-import ua.naiksoftware.stompclientexample.network.RestClient;
 import ua.naiksoftware.stompclientexample.resource.AuthenticationController;
 import ua.naiksoftware.stompclientexample.resource.implement.AuthenticationControllerIpml;
 
@@ -55,6 +55,9 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
     private String token;
     private AuthenticationControllerIpml authenticationController;
 
+    private final String fromUser = "client";
+    private final String toUser = "admin";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,8 +66,8 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
         authenticationController = new AuthenticationControllerIpml(service);
         authenticationController.setCallback(this);
         authenticationController.login(UserModel.builder()
-                .username("admin")
-                .password("admin")
+                .username(fromUser)
+                .password(fromUser)
                 .build());
         Toast.makeText(this, "Authen..", Toast.LENGTH_SHORT).show();
 
@@ -74,6 +77,7 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
         mRecyclerView.setAdapter(mAdapter);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, true));
 
+        // must: "ws://" and end with: /websocket
         mStompClient = Stomp.over(
                 Stomp.ConnectionProvider.OKHTTP,
                 "ws://" + BASE_URL_SERVER +":" + BASE_PORT + "/example-endpoint/websocket");
@@ -128,13 +132,47 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
                     addItem(mGson.fromJson(topicMessage.getPayload(), EchoModel.class));
                 }, throwable -> Log.e(TAG, "Error on subscribe topic", throwable));
 
+        // subscribe my username topic for received message from other user
+        String subscribePath = "/chat/queue/" + fromUser + "/chat/queue/messages";
+        Log.e("Subscribe", subscribePath);
+        Disposable usersTopic = mStompClient.topic(subscribePath) // subscribe
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(topicMessage -> {
+                    Log.e(TAG, "Received from USER: " + topicMessage.getPayload());
+                    addItem(mGson.fromJson(topicMessage.getPayload(), EchoModel.class));
+                }, throwable -> Log.e(TAG, "Error on subscribe topic", throwable));
+
         compositeDisposable.add(dispTopic);
+        compositeDisposable.add(usersTopic);
 
         mStompClient.connect(headers);
     }
 
     public void sendEchoViaStomp(View v) {
-        compositeDisposable.add(mStompClient.send("/app/hello-msg-mapping", "Echo STOMP " + mTimeFormat.format(new Date()))
+        compositeDisposable.add(mStompClient.send("/app/hello-msg-mapping", "AABBCC")
+                .compose(applySchedulers())
+                .subscribe(() -> Log.e(TAG, "STOMP echo send successfully"), throwable -> {
+                    Log.e(TAG, "Error send STOMP echo", throwable);
+                    toast(throwable.getMessage());
+                })
+
+        );
+    }
+
+    /**
+     *
+     * @param v
+     */
+    public void sendCommandToUser(View v) {
+        Command command = Command.builder()
+                .fromUser(fromUser)
+                .toUser(toUser)
+                .data("Echo STOMP " + mTimeFormat.format(new Date()))
+                .build();
+        String data = new Gson().toJson(command);
+        Log.e("Sending command", "Command: " + data);
+        compositeDisposable.add(mStompClient.send("/app/commander", data)
                 .compose(applySchedulers())
                 .subscribe(() -> Log.e(TAG, "STOMP echo send successfully"), throwable -> {
                     Log.e(TAG, "Error send STOMP echo", throwable);
@@ -145,13 +183,14 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
     }
 
     public void sendEchoViaRest(View v) {
-        mRestPingDisposable = RestClient.getInstance().getExampleRepository()
+        /*mRestPingDisposable = RestClient.getInstance().getExampleRepository()
                 .sendRestEcho(Constant.TOKEN_HEADER + token, "Echo REST " + mTimeFormat.format(new Date()))
                 .compose(applySchedulers())
                 .subscribe(() -> Log.e(TAG, "REST echo send successfully"), throwable -> {
                     Log.e(TAG, "Error send REST echo", throwable);
                     toast(throwable.getMessage());
-                });
+                });*/
+        sendCommandToUser(v);
     }
 
     private void addItem(EchoModel echoModel) {
