@@ -2,9 +2,15 @@ package ua.naiksoftware.stompclientexample;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
-import android.widget.Button;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -15,17 +21,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import io.reactivex.CompletableTransformer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import ua.naiksoftware.stomp.Stomp;
-import ua.naiksoftware.stomp.dto.StompHeader;
 import ua.naiksoftware.stomp.StompClient;
+import ua.naiksoftware.stomp.dto.StompHeader;
 import ua.naiksoftware.stompclientexample.adapter.SimpleAdapter;
 import ua.naiksoftware.stompclientexample.callback.RestfulCallback;
 import ua.naiksoftware.stompclientexample.model.Command;
@@ -35,6 +38,7 @@ import ua.naiksoftware.stompclientexample.network.Constant;
 import ua.naiksoftware.stompclientexample.network.RestClient;
 import ua.naiksoftware.stompclientexample.resource.AuthenticationController;
 import ua.naiksoftware.stompclientexample.resource.implement.AuthenticationControllerIpml;
+import ua.naiksoftware.stompclientexample.service.RemoteControl;
 
 import static ua.naiksoftware.stompclientexample.network.Constant.BASE_PORT;
 import static ua.naiksoftware.stompclientexample.network.Constant.BASE_URL_SERVER;
@@ -63,8 +67,16 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Button chat = findViewById(R.id.chattingBtn);
-        chat.setText(chat.getText() + " " + toUser);
+        EditText editText = findViewById(R.id.command);
+        editText.setHint("Send to: " + toUser);
+        editText.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEND) {
+                sendCommandToUser(v);
+                return true;
+            }
+            // Return true if you have consumed the action, else false.
+            return false;
+        });
         AuthenticationController service = ApiClient.getClient().create(AuthenticationController.class);
         authenticationController = new AuthenticationControllerIpml(service);
         authenticationController.setCallback(this);
@@ -141,8 +153,11 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(topicMessage -> {
-                    Log.e(TAG, "Received from USER: " + topicMessage.getPayload());
-                    addItem(mGson.fromJson(topicMessage.getPayload(), Command.class));
+                    Log.e(TAG, "Received command from USER: " + topicMessage.getPayload());
+                    Command cm = mGson.fromJson(topicMessage.getPayload(), Command.class);
+                    addItem(cm);
+                    // do command received
+                    RemoteControl.powerController(Byte.valueOf(cm.getData()), MainActivity.this);
                 }, throwable -> Log.e(TAG, "Error on subscribe topic", throwable));
 
         compositeDisposable.add(dispTopic);
@@ -171,7 +186,7 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
         Command command = new Command()
                 .setFromUser(fromUser)
                 .setToUser(toUser)
-                .setData("Echo STOMP " + mTimeFormat.format(new Date()));
+                .setData(((EditText)v).getText().toString());
         String data = new Gson().toJson(command);
         Log.e("Sending command", "Command: " + data);
         compositeDisposable.add(mStompClient.send("/app/commander", data)
