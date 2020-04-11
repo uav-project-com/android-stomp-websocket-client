@@ -1,10 +1,13 @@
 package ua.naiksoftware.stompclientexample.model;
 
-import lombok.Builder;
-import lombok.Data;
-
-@Data
-@Builder
 public class TokenModel {
+    public void setToken(String token) {
+        this.token = token;
+    }
+
     private String token;
+
+    public String getToken() {
+        return token;
+    }
 }

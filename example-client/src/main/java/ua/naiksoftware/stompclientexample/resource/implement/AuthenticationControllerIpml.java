@@ -6,7 +6,6 @@ import com.google.gson.Gson;
 
 import java.util.Objects;
 
-import lombok.Data;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -18,8 +17,31 @@ import ua.naiksoftware.stompclientexample.resource.AuthenticationController;
 /**
  * Created by hieu19926@gmail.com on 07/02/2020.
  */
-@Data
 public class AuthenticationControllerIpml {
+    public AuthenticationController getController() {
+        return controller;
+    }
+
+    public void setController(AuthenticationController controller) {
+        this.controller = controller;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public RestfulCallback getCallback() {
+        return callback;
+    }
+
+    public void setCallback(RestfulCallback callback) {
+        this.callback = callback;
+    }
+
     private AuthenticationController controller;
     private String token;
     private RestfulCallback callback;

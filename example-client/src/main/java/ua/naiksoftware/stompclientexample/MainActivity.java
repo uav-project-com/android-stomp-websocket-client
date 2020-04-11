@@ -68,10 +68,9 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
         AuthenticationController service = ApiClient.getClient().create(AuthenticationController.class);
         authenticationController = new AuthenticationControllerIpml(service);
         authenticationController.setCallback(this);
-        authenticationController.login(UserModel.builder()
-                .username(fromUser)
-                .password(fromUser)
-                .build());
+        authenticationController.login(new UserModel()
+                .setUsername(fromUser)
+                .setPassword(fromUser));
         Toast.makeText(this, "Authen..", Toast.LENGTH_SHORT).show();
 
         mRecyclerView = findViewById(R.id.recycler_view);
@@ -153,7 +152,7 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
     }
 
     public void sendEchoViaStomp(View v) {
-        Command sendMsg = Command.builder().fromUser(fromUser).data("sendEchoViaStomp").build();
+        Command sendMsg = new Command().setFromUser(fromUser).setData("sendEchoViaStomp");
         compositeDisposable.add(mStompClient.send("/app/hello-msg-mapping", new Gson().toJson(sendMsg))
                 .compose(applySchedulers())
                 .subscribe(() -> Log.e(TAG, "STOMP echo send successfully"), throwable -> {
@@ -169,11 +168,10 @@ public class MainActivity extends AppCompatActivity implements RestfulCallback {
      * @param v view
      */
     public void sendCommandToUser(View v) {
-        Command command = Command.builder()
-                .fromUser(fromUser)
-                .toUser(toUser)
-                .data("Echo STOMP " + mTimeFormat.format(new Date()))
-                .build();
+        Command command = new Command()
+                .setFromUser(fromUser)
+                .setToUser(toUser)
+                .setData("Echo STOMP " + mTimeFormat.format(new Date()));
         String data = new Gson().toJson(command);
         Log.e("Sending command", "Command: " + data);
         compositeDisposable.add(mStompClient.send("/app/commander", data)
